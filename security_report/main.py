@@ -6,7 +6,7 @@ from datetime import datetime as dt
 
 
 def should_ignore(
-    vulnerability: dict, ignored_files: list, ignored_identifiers: list
+        vulnerability: dict, ignored_files: list, ignored_identifiers: list
 ) -> bool:
     """
     Check if the vulnerability should be ignored based on the ignored args.
@@ -31,7 +31,7 @@ def should_ignore(
 
 
 def filter_vulnerabilities(
-    vulnerabilities: list, ignored_files: list, ignored_identifiers: list
+        vulnerabilities: list, ignored_files: list, ignored_identifiers: list
 ) -> tuple:
     """
     Filter the vulnerabilities based on the ignored args.
@@ -210,12 +210,15 @@ def merge_similar(vulnerabilities: list) -> list:
 
 
 def security_report(
-    input_files: list,
-    input_path: str,
-    output_file: str,
-    ignored_files: list,
-    ignored_identifiers: list,
-    reasons: list,
+        input_files: list,
+        input_path: str,
+        output_file: str,
+        ignored_files: list,
+        ignored_identifiers: list,
+        reasons: list,
+        resumed_json: str,
+        header: str,
+        subtitle: str
 ):
     """
     Process multiple SAST reports cleaning ignored files and ignored
@@ -230,6 +233,7 @@ def security_report(
         ignored_identifiers (list): list of identifiers names to be ignored.
         reasons (list): list of reasons for the filters (only shown on final
             CLI summary).
+        resumed_json (str): path to the resumed json file.
     """
     print('-' * 50)
     vulnerabilities_raw, start, end = read_files(input_files, input_path)
@@ -299,6 +303,37 @@ def security_report(
     )
     print('-' * 50)
 
+    def generate_dict(classified, merged):
+        value = ''
+        for key in classified:
+            value += (
+                f'\t\t- {key}:\n'
+                f'\t\t\tarquivos: {len(classified[key])}\n'
+                f'\t\t\tvulnerabilidades: {len(merged[key])}\n'
+            )
+        return value
+
+    output = {
+        'header': header,
+        'subtitle': subtitle,
+        'message': (
+            f'Metricas:\n'
+            f'\t\tInicio: {start}\n'
+            f'\t\tFim: {end}\n'
+            f'\t\tDuração: {end - start}\n'
+            'Vulnerabilidades:\n'
+            f'\t\ttotal: {len(vulnerabilities_raw)}\n'
+            f'\t\tignored: {len(ignored)}\n'
+            f'\t\tfiltered: {len(vulnerabilities)}\n'
+            f'\t\treasons: {[reason for reason in reasons]}\n'
+            f'Severidade:\n{generate_dict(classified_severity, merged_severity)}'
+            f'Confiabilidade:\n{generate_dict(classified_confidence, merged_confidence)}'
+        ),
+    }
+    if resumed_json:
+        with open(resumed_json, 'w') as file:
+            file.write(json.dumps(output))
+
 
 def cli():
     parser = argparse.ArgumentParser(description='Process SAST reports.')
@@ -350,6 +385,27 @@ def cli():
         ),
         default=[],
     )
+    parser.add_argument(
+        '--resumed-json', '-rj',
+        required=False,
+        type=str,
+        help='path to resumed json.',
+        default='',
+    )
+    parser.add_argument(
+        '--header', '-head',
+        required=False,
+        type=str,
+        help='header for resume json',
+        default='Header',
+    )
+    parser.add_argument(
+        '--subtitle', '-sub',
+        required=False,
+        type=str,
+        help='subtitle for resume json',
+        default='Subtitle',
+    )
     args = parser.parse_args()
     security_report(
         args.input_files,
@@ -358,6 +414,9 @@ def cli():
         args.ignored_files,
         args.ignored_identifiers,
         args.reasons,
+        args.resumed_json,
+        args.header,
+        args.subtitle
     )
 
 
