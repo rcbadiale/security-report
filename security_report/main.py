@@ -3,6 +3,7 @@
 import argparse
 import json
 from datetime import datetime as dt
+from os.path import exists
 
 
 def should_ignore(
@@ -125,15 +126,18 @@ def read_files(files: list, path: str) -> tuple:
     vulnerabilities_raw = []
     for filename in files:
         file_path = '/'.join([path, filename])
-        with open(file_path) as file:
-            data = json.load(file)
-            start = min(dt.fromisoformat(data['scan']['start_time']), start)
-            end = max(dt.fromisoformat(data['scan']['end_time']), end)
-            print(
-                f'{filename.split(".")[0].capitalize()}\t\t'
-                f'{len(data["vulnerabilities"])}'
-            )
-            vulnerabilities_raw += data['vulnerabilities']
+        if exists(file_path):
+            with open(file_path) as file:
+                data = json.load(file)
+                start = min(
+                    dt.fromisoformat(data['scan']['start_time']), start
+                )
+                end = max(dt.fromisoformat(data['scan']['end_time']), end)
+                print(
+                    f'{filename.split(".")[0].capitalize()}\t\t'
+                    f'{len(data["vulnerabilities"])}'
+                )
+                vulnerabilities_raw += data['vulnerabilities']
     print('-' * 50)
     return vulnerabilities_raw, start, end
 
