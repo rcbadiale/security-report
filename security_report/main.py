@@ -154,21 +154,25 @@ def clear_vulnerabilities_data(vulnerabilities: list) -> list:
     """
     output = []
     for each in vulnerabilities:
-        identifiers = {i['type']: i['name'] for i in each['identifiers']}
-        urls = {i['type']: i.get('url') for i in each['identifiers']}
-        output.append({
-            'category': each.get('category'),
-            'description': each.get('description'),
-            'message': each.get('message'),
-            'severity': each.get('severity'),
-            'confidence': each.get('confidence', 'unknown'),
-            'scanner': each.get('scanner', {}).get('id'),
-            'location': (
-                f'{each["location"]["file"]}:{each["location"]["end_line"]}'
-            ),
-            'identifiers': identifiers,
-            'urls': urls,
-        })
+        try:
+            identifiers = {i['type']: i['name'] for i in each['identifiers']}
+            urls = {i['type']: i.get('url') for i in each['identifiers']}
+            output.append({
+                'category': each.get('category'),
+                'description': each.get('description'),
+                'message': each.get('message'),
+                'severity': each.get('severity'),
+                'confidence': each.get('confidence', 'unknown'),
+                'scanner': each.get('scanner', {}).get('id'),
+                'location': (
+                    f'{each["location"]["file"]}:{each["location"]["end_line"]}'
+                ),
+                'identifiers': identifiers,
+                'urls': urls,
+            })
+        except KeyError as err:
+            print(each)
+            print(err)
     return output
 
 
